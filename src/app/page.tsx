@@ -15,7 +15,7 @@ const FEATURES = [
   },
   {
     title: "Production-ready",
-    body: "Docker image, standalone Next build, PostgreSQL or SQLite — deploys in one command.",
+    body: "Docker image with multi-stage build, PostgreSQL or SQLite — deploys in one command.",
   },
   {
     title: "Tested & typed",

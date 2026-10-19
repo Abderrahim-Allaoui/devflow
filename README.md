@@ -18,6 +18,22 @@
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/screenshot-landing.png" alt="DevFlow landing page" width="720">
+</p>
+
+<p align="center">
+  <img src="docs/screenshot-board.png" alt="Kanban board with drag &amp; drop" width="720">
+</p>
+
+<p align="center">
+  <img src="docs/screenshot-modal.png" alt="Task editor modal" width="720">
+</p>
+
+---
+
 ## ✨ Features
 
 - 🗂️ **Kanban boards** — columns & tasks with **HTML5 drag & drop** (zero DnD libraries)
