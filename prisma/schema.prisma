@@ -1,0 +1,62 @@
+// ── DevFlow Prisma schema ─────────────────────────────────────
+// SQLite by default (zero setup). For PostgreSQL:
+//   1. docker compose up -d db
+//   2. set DATABASE_URL in .env
+//   3. change `provider = "sqlite"` → `"postgresql"` below
+//   4. npm run db:push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  passwordHash String
+  createdAt DateTime @default(now())
+  boards    Board[]
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  title     String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  columns   Column[]
+
+  @@index([ownerId])
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  title     String
+  position  Int      @default(0)
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([boardId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  // low | medium | high — validated in the API layer
+  priority    String   @default("medium")
+  position    Int      @default(0)
+  columnId    String
+  column      Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([columnId])
+}
