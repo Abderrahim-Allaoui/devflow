@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "prisma generate --schema prisma/schema.postgres.prisma && next build",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",

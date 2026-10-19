@@ -79,6 +79,23 @@ Demo account (after seeding): **demo@devflow.app** / **devflow123**
 docker compose up --build     # → http://localhost:3000
 ```
 
+### 3. Production (Vercel + Neon) — the live demo
+
+The live deployment runs on **Vercel** with a managed **PostgreSQL (Neon)** database.
+
+- `prisma/schema.prisma` → SQLite, local dev (zero setup)
+- `prisma/schema.postgres.prisma` → PostgreSQL, production
+
+```bash
+npx prisma generate --schema prisma/schema.postgres.prisma
+npx prisma db push     --schema prisma/schema.postgres.prisma
+npm run build:vercel   # generates the Postgres client, then builds
+```
+
+Environment variables expected on the host: `DATABASE_URL`, `JWT_SECRET`, `COOKIE_SECURE=true`.
+
+**Live demo → https://devflow-black-eight.vercel.app**
+
 ### Tests
 
 ```bash

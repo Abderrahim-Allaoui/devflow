@@ -1,0 +1,66 @@
+// ── DevFlow — PostgreSQL schema (production / serverless) ───────────────
+// Used when DATABASE_URL points to a hosted Postgres (Vercel + Neon, etc).
+//   npx prisma generate --schema prisma/schema.postgres.prisma
+//   npx prisma db push --schema prisma/schema.postgres.prisma
+// The local dev schema (SQLite, zero setup) stays in prisma/schema.prisma.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  boards       Board[]
+
+  @@map("users")
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  title     String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  columns   Column[]
+
+  @@index([ownerId])
+  @@map("boards")
+}
+
+model Column {
+  id       String @id @default(cuid())
+  title    String
+  position Int    @default(0)
+  boardId  String
+  board    Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks    Task[]
+
+  @@index([boardId])
+  @@map("columns")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  // low | medium | high — validated in the API layer
+  priority    String   @default("medium")
+  position    Int      @default(0)
+  columnId    String
+  column      Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([columnId])
+  @@map("tasks")
+}
