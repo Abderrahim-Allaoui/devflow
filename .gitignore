@@ -37,3 +37,7 @@ coverage/
 
 .vercel
 .env*
+
+# Vercel/Neon agent skills (installed by the marketplace integration)
+.agents/
+skills-lock.json
