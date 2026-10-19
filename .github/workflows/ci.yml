@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: "file:./devflow.db"
+  JWT_SECRET: "ci-only-secret-not-used-in-production"
+  COOKIE_SECURE: "false"
+
+jobs:
+  quality:
+    name: Test · typecheck · build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply schema (SQLite)
+        run: npx prisma db push --skip-generate
+
+      - name: Unit tests
+        run: npm test
+
+      - name: TypeScript strict check
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
