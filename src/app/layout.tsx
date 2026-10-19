@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
+import { APP_DESCRIPTION, APP_NAME } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "DevFlow — Kanban for dev teams",
-    template: "%s · DevFlow",
+    default: `${APP_NAME} — Kanban for dev teams`,
+    template: `%s · ${APP_NAME}`,
   },
-  description:
-    "Full-stack kanban SaaS built with Next.js 15, Prisma and JWT auth. Drag, drop, ship.",
+  description: APP_DESCRIPTION,
 };
 
 export default function RootLayout({

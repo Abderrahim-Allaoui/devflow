@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 const FEATURES = [
   {
@@ -32,7 +33,8 @@ export default function Home() {
     <>
       <header className="site-header">
         <div className="logo">
-          Dev<span>Flow</span>
+          {APP_NAME.slice(0, 3)}
+          <span>{APP_NAME.slice(3)}</span>
         </div>
         <nav style={{ display: "flex", gap: "0.5rem" }}>
           <Link href="/login" className="btn btn-ghost">
@@ -49,10 +51,7 @@ export default function Home() {
           <h1>
             Ship faster with a <em>kanban</em> built for dev teams
           </h1>
-          <p>
-            DevFlow is a full-stack SaaS: Next.js 15, Prisma, JWT auth and
-            PostgreSQL/SQLite. Plan, drag, drop — and ship.
-          </p>
+          <p>{APP_TAGLINE}</p>
           <div className="hero-actions">
             <Link href="/register" className="btn btn-primary">
               Create your board →
@@ -74,7 +73,7 @@ export default function Home() {
       </main>
 
       <footer className="site-footer">
-        DevFlow — built by Abderrahim Allaoui · MIT License
+        {APP_NAME} — MIT License
       </footer>
     </>
   );

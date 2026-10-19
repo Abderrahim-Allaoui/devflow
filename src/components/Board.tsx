@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Board as BoardType, Task } from "@/types";
+import { APP_NAME } from "@/lib/brand";
 import Column from "./Column";
 
 type EditingState = { task: Task } | null;
@@ -226,7 +227,8 @@ export default function Board({ user }: { user: { name: string } }) {
     <>
       <header className="site-header">
         <div className="logo">
-          Dev<span>Flow</span>
+          {APP_NAME.slice(0, 3)}
+          <span>{APP_NAME.slice(3)}</span>
         </div>
         <nav style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
           <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
