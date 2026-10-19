@@ -5,6 +5,8 @@
 **Full-stack kanban SaaS — plan it, drag it, ship it.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/live_demo-devflow--black-eight.vercel.app-22d3ee?logo=vercel)](https://devflow-black-eight.vercel.app)
+[![CI](https://github.com/Abderrahim-Allaoui/devflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Abderrahim-Allaoui/devflow/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 [![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma)](https://www.prisma.io)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript)](https://www.typescriptlang.org)
