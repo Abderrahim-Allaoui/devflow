@@ -14,6 +14,10 @@
 
 *A clean, production-ready reference project: REST API, JWT auth, drag & drop, Docker.*
 
+> 🛒 **Using DevFlow in a client or paid product?** A commercial license of the
+> template is available → [devflow-license.vercel.app](https://devflow-license.vercel.app)
+> (Personal · Commercial · Studio — one-time payment, docs included).
+
 [English](#-features) · [Français](#-en-français) · [API](#-rest-api) · [Quick start](#-quick-start)
 
 </div>
