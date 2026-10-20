@@ -17,6 +17,7 @@
 > 🛒 **Using DevFlow in a client or paid product?** A commercial license of the
 > template is available → [devflow-license.vercel.app](https://devflow-license.vercel.app)
 > (Personal · Commercial · Studio — one-time payment, docs included).
+> Discussion &amp; roadmap: [github.com/Abderrahim-Allaoui/devflow/discussions](https://github.com/Abderrahim-Allaoui/devflow/discussions)
 > Prefer to try it first? Grab the packaged template:
 > [v1.0.0 release](https://github.com/Abderrahim-Allaoui/devflow/releases/download/v1.0.0/DevFlow-v1.0.0-template.zip).
 

@@ -130,6 +130,7 @@ CI runs the three commands above on every push (see `.github/workflows/ci.yml`).
 | Login returns 401 but the password is right | cookie blocked → set `COOKIE_SECURE=false` for plain HTTP |
 | `prisma generate` complains about the provider | the provider must be a literal (`"sqlite"` / `"postgresql"`) |
 | Port 3000 already in use | `PORT=3001 npm run dev` |
+| `the URL must start with the protocol file:` | a `.env.local` holding a Postgres URL overrides `.env` - delete it, or run `DATABASE_URL=file:./devflow.db npm run dev` |
 
 ---
 
