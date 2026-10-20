@@ -17,6 +17,8 @@
 > 🛒 **Using DevFlow in a client or paid product?** A commercial license of the
 > template is available → [devflow-license.vercel.app](https://devflow-license.vercel.app)
 > (Personal · Commercial · Studio — one-time payment, docs included).
+> **Buy the template** (one-time payment, code + docs + 12 months of updates):
+> Personal EUR 39 - https://allaoui67.gumroad.com/l/fyimeh | Commercial EUR 99 - https://allaoui67.gumroad.com/l/jempqs | Studio EUR 199 - https://allaoui67.gumroad.com/l/edecsm
 > Need B2B data instead of code? [Lead lists, scraping &amp; data cleaning in 48h](https://devflow-license.vercel.app/services.html) — 250/1000 verified businesses, fixed price.
 > Discussion &amp; roadmap: [github.com/Abderrahim-Allaoui/devflow/discussions](https://github.com/Abderrahim-Allaoui/devflow/discussions)
 > Prefer to try it first? Grab the packaged template:
