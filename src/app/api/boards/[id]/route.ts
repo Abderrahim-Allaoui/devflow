@@ -43,7 +43,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     where: { id: board.id },
     data: { title },
     include: {
-      columns: { orderBy: { position: "asc" }, include: { tasks: { orderBy: { position: "asc" } } } },
+      columns: {
+        orderBy: { position: "asc" },
+        include: { tasks: { orderBy: { position: "asc" }, take: 50 } },
+      },
     },
   });
 
