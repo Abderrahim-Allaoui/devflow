@@ -9,13 +9,17 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
+  // B7 — paginate the board list; tasks are loaded only when a board is
+  // opened (fine for a demo, required for production).
+  const limit = 20;
   const boards = await prisma.board.findMany({
     where: { ownerId: user.id },
     orderBy: { createdAt: "desc" },
+    take: limit,
     include: {
       columns: {
         orderBy: { position: "asc" },
-        include: { tasks: { orderBy: { position: "asc" } } },
+        include: { tasks: { orderBy: { position: "asc" }, take: 50 } },
       },
     },
   });

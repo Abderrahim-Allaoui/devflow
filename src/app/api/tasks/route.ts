@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { cleanString, jsonError } from "@/lib/api";
+import { PRIORITIES } from "@/lib/validation";
 import { getOwnedColumn } from "@/lib/ownership";
 
-const PRIORITIES = ["low", "medium", "high"];
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -39,7 +39,12 @@ export async function POST(req: NextRequest) {
   const column = await getOwnedColumn(columnId, user.id);
   if (!column) return jsonError(404, "Column not found");
 
-  const count = await prisma.task.count({ where: { columnId: column.id } });
+  // B1 — append at max(position) + 1 instead of count (avoids gaps/duplicates).
+  const max = await prisma.task.aggregate({
+    where: { columnId: column.id },
+    _max: { position: true },
+  });
+  const position = (max._max.position ?? -1) + 1;
 
   const task = await prisma.task.create({
     data: {
@@ -47,7 +52,7 @@ export async function POST(req: NextRequest) {
       description: cleanDescription,
       priority: cleanPriority,
       columnId: column.id,
-      position: count,
+      position,
     },
   });
 

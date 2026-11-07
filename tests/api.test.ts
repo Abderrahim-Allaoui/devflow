@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cleanString } from "@/lib/api";
+import { EMAIL_RE, PRIORITIES } from "@/lib/validation";
 
 describe("cleanString", () => {
   it("trims valid input", () => {
@@ -21,8 +22,6 @@ describe("cleanString", () => {
 });
 
 describe("API validation rules", () => {
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   it("accepts real emails and rejects junk", () => {
     expect(EMAIL_RE.test("user@example.com")).toBe(true);
     expect(EMAIL_RE.test("a@b.c")).toBe(true);
@@ -31,8 +30,7 @@ describe("API validation rules", () => {
   });
 
   it("keeps priorities in the allowed set", () => {
-    const allowed = ["low", "medium", "high"];
-    expect(allowed.includes("high")).toBe(true);
-    expect(allowed.includes("urgent")).toBe(false);
+    expect(PRIORITIES.includes("high")).toBe(true);
+    expect(PRIORITIES.includes("urgent")).toBe(false);
   });
 });

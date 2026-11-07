@@ -13,10 +13,6 @@ export function jsonError(status: number, message: string) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export function isInvalidJson(body: unknown): body is null | undefined {
-  return body === null || typeof body !== "object";
-}
-
 /** Simple non-empty string check with a max length guard. */
 export function cleanString(value: unknown, max = 200): string | null {
   if (typeof value !== "string") return null;

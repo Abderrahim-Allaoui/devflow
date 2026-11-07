@@ -12,7 +12,10 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Tests](https://img.shields.io/badge/tests-Vitest-6E9F18?logo=vitest)](https://vitest.dev)
 
-*A clean, production-ready reference project: REST API, JWT auth, drag & drop, Docker.*
+*A clean reference project: REST API, JWT auth, drag & drop, Docker.
+Unit tests cover auth primitives and API validation; ownership and
+cross-user access tests are added (see src/lib/validation.ts shared rules),
+integration tests against a real database are tracked as open work.*
 
 > 🛒 **Using DevFlow in a client or paid product?** A commercial license of the
 > template is available → [devflow-license.vercel.app](https://devflow-license.vercel.app)
@@ -52,8 +55,8 @@
 - 🔐 **Auth** — register/login with **bcrypt** hashing and **JWT in httpOnly cookies** (7-day sessions)
 - 🧱 **Typed REST API** — Next.js route handlers + Prisma, with **ownership checks** on every resource
 - 🐘 **PostgreSQL or SQLite** — SQLite by default (zero setup), one-line switch to Postgres
-- 🐳 **Docker** — multi-stage Dockerfile + compose stack (app + db)
-- ✅ **Tested** — Vitest covering auth primitives and API validation, strict TypeScript everywhere
+- 🐳 **Docker** — multi-stage Dockerfile + compose stack (app + db). Runtime image installs production dependencies only, runs as non-root, migrations via `prisma migrate deploy`.
+- ✅ **Tested** — Vitest unit tests for auth and API validation (shared rules in src/lib/validation.ts), plus ownership/cross-user access tests; TypeScript strict everywhere. Integration tests against a real database are open work.
 - 🌗 **Dark UI by design** — hand-rolled CSS design system, no UI framework tax
 ## 🛠️ Tech stack
 

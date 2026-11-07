@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { cleanString, jsonError } from "@/lib/api";
+import { PRIORITIES } from "@/lib/validation";
 import { getOwnedColumn, getOwnedTask } from "@/lib/ownership";
 
-const PRIORITIES = ["low", "medium", "high"];
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -57,8 +57,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   if (patch.position !== undefined) {
-    if (typeof patch.position !== "number" || !Number.isInteger(patch.position) || patch.position < 0) {
-      return jsonError(400, "position must be a positive integer");
+    // B3 — clamp to the column length inside the transaction (no holes).
+    if (
+      typeof patch.position !== "number" ||
+      !Number.isInteger(patch.position) ||
+      patch.position < 0
+    ) {
+      return jsonError(400, "position must be a non-negative integer");
     }
     targetIndex = patch.position;
   }
@@ -66,23 +71,59 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (targetColumnId || targetIndex !== null) {
     const finalColumnId = targetColumnId ?? task.columnId;
 
-    // Make room in the destination column
-    if (targetIndex !== null) {
-      await prisma.task.updateMany({
-        where: { columnId: finalColumnId, id: { not: task.id }, position: { gte: targetIndex } },
-        data: { position: { increment: 1 } },
+    const updated = await prisma.$transaction(async (tx) => {
+      // B2 — both writes inside one transaction: concurrent drag-and-drop
+      // requests cannot interleave and corrupt ordering.
+      const siblings = await tx.task.findMany({
+        where: { columnId: finalColumnId, id: { not: task.id } },
+        orderBy: { position: "asc" },
+        select: { id: true, position: true },
       });
-    } else {
-      const count = await prisma.task.count({ where: { columnId: finalColumnId } });
-      targetIndex = count;
-    }
 
-    data.columnId = finalColumnId;
-    data.position = targetIndex;
+      let newIndex: number;
+      if (targetIndex !== null) {
+        newIndex = Math.min(Math.max(targetIndex, 0), siblings.length);
+      } else {
+        // B1 — append at max(position) + 1 instead of count (no duplicates).
+        const max = siblings.reduce((m, t) => Math.max(m, t.position), -1);
+        newIndex = max + 1;
+      }
+
+      // Normalize siblings around newIndex (positions stay 0..n-1 compact).
+      siblings.forEach((t, i) => {
+        const desired = i < newIndex ? i : i + 1;
+        if (t.position !== desired) {
+          void tx.task.update({
+            where: { id: t.id },
+            data: { position: desired },
+          });
+        }
+      });
+
+      const taskUpdate: Record<string, unknown> = { position: newIndex };
+      if (finalColumnId !== task.columnId) {
+        taskUpdate.columnId = finalColumnId;
+      }
+      if (data.title !== undefined) taskUpdate.title = data.title;
+      if (data.description !== undefined)
+        taskUpdate.description = data.description;
+      if (data.priority !== undefined) taskUpdate.priority = data.priority;
+
+      await tx.task.update({ where: { id: task.id }, data: taskUpdate });
+
+      return tx.task.findUnique({ where: { id: task.id } });
+    });
+
+    return NextResponse.json({ task: updated });
   }
 
-  const updated = await prisma.task.update({ where: { id: task.id }, data });
-  return NextResponse.json({ task: updated });
+  // Plain field update without move.
+  if (Object.keys(data).length > 0) {
+    const updated = await prisma.task.update({ where: { id: task.id }, data });
+    return NextResponse.json({ task: updated });
+  }
+
+  return NextResponse.json({ task });
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
@@ -93,6 +134,22 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const task = await getOwnedTask(id, user.id);
   if (!task) return jsonError(404, "Task not found");
 
-  await prisma.task.delete({ where: { id: task.id } });
+  const columnId = task.columnId;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.task.delete({ where: { id: task.id } });
+    // B1 — normalize remaining positions to 0..n-1 after deletion.
+    const remaining = await tx.task.findMany({
+      where: { columnId },
+      orderBy: { position: "asc" },
+      select: { id: true },
+    });
+    await Promise.all(
+      remaining.map((t, i) =>
+        tx.task.update({ where: { id: t.id }, data: { position: i } }),
+      ),
+    );
+  });
+
   return NextResponse.json({ ok: true });
 }

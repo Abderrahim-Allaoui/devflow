@@ -4,6 +4,13 @@ import { hashPassword } from "../src/lib/auth";
 const prisma = new PrismaClient();
 
 async function main() {
+  // S8 — never seed into production (a known demo account with a known
+  // password must not land on a live database).
+  if (process.env.NODE_ENV === "production") {
+    console.log("Skipping seed in production.");
+    return;
+  }
+
   const email = "demo@devflow.app";
   const passwordHash = await hashPassword("devflow123");
 

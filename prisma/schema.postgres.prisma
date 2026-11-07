@@ -18,10 +18,21 @@ model User {
   email        String   @unique
   name         String
   passwordHash String
+  // Bumped on every logout: JWTs carry this value, mismatches are rejected.
+  tokenVersion Int      @default(0)
   createdAt    DateTime @default(now())
   boards       Board[]
 
   @@map("users")
+}
+
+// Rate limiting for login/register (S3): one row per key (email or IP).
+model LoginAttempt {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@map("login_attempts")
 }
 
 model Board {

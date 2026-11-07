@@ -26,7 +26,7 @@ describe("password hashing", () => {
 });
 
 describe("JWT session tokens", () => {
-  const payload = { sub: "user_1", email: "a@b.co", name: "Ada" };
+  const payload = { sub: "user_1", email: "a@b.co", name: "Ada", tv: 0 };
 
   it("signs and verifies a token", () => {
     const token = signToken(payload);
