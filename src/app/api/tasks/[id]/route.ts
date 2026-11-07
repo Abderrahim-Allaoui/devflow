@@ -4,6 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { cleanString, jsonError } from "@/lib/api";
 import { PRIORITIES } from "@/lib/validation";
 import { getOwnedColumn, getOwnedTask } from "@/lib/ownership";
+import {
+  appendPosition,
+  clampPosition,
+  normalizeColumnPlan,
+} from "@/lib/task-positions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -82,23 +87,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
       let newIndex: number;
       if (targetIndex !== null) {
-        newIndex = Math.min(Math.max(targetIndex, 0), siblings.length);
+        // B3 — clamp to the column length (no holes accepted).
+        newIndex = clampPosition(targetIndex, siblings.length);
       } else {
         // B1 — append at max(position) + 1 instead of count (no duplicates).
-        const max = siblings.reduce((m, t) => Math.max(m, t.position), -1);
-        newIndex = max + 1;
+        newIndex = await appendPosition(tx, finalColumnId, task.id);
       }
 
       // Normalize siblings around newIndex (positions stay 0..n-1 compact).
-      siblings.forEach((t, i) => {
-        const desired = i < newIndex ? i : i + 1;
-        if (t.position !== desired) {
-          void tx.task.update({
-            where: { id: t.id },
-            data: { position: desired },
-          });
-        }
-      });
+      const moves = normalizeColumnPlan(siblings, newIndex, task.id);
+      await Promise.all(
+        moves.map(({ id, position }) =>
+          tx.task.update({ where: { id }, data: { position } }),
+        ),
+      );
 
       const taskUpdate: Record<string, unknown> = { position: newIndex };
       if (finalColumnId !== task.columnId) {
