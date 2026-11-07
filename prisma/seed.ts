@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 async function main() {
   // S8 — never seed into production (a known demo account with a known
   // password must not land on a live database).
-  if (process.env.NODE_ENV === "production") {
-    console.log("Skipping seed in production.");
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+    console.log("Skipping demo seed in production (set ALLOW_DEMO_SEED=true to override).");
     return;
   }
 

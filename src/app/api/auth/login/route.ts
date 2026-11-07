@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie, verifyPassword } from "@/lib/auth";
 import { jsonError } from "@/lib/api";
-import { clearRateLimit, clientIp, hitRateLimit } from "@/lib/rate-limit";
+import { clearRateLimit, clientIp, hitRateLimit, ipLimitEnabled } from "@/lib/rate-limit";
 import { MAX_PASSWORD } from "@/lib/validation";
 
 // Dummy hash so unknown emails cost the same bcrypt time as real ones.
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
   const MAX_PER_IP_EMAIL = 3;
 
   const emailOk = await hitRateLimit(emailKey, MAX_PER_EMAIL);
-  const ipOk = await hitRateLimit(ipKey, MAX_PER_IP);
-  const ipEmailOk = await hitRateLimit(ipEmailKey, MAX_PER_IP_EMAIL);
+  const ipOk = (!ipLimitEnabled() || (await hitRateLimit(ipKey, MAX_PER_IP)));
+  const ipEmailOk = (!ipLimitEnabled() || (await hitRateLimit(ipEmailKey, MAX_PER_IP_EMAIL)));
   if (!emailOk || !ipOk || !ipEmailOk) {
     return jsonError(429, "Too many attempts — try again in a few minutes");
   }

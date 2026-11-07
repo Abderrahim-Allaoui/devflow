@@ -75,3 +75,13 @@ export async function clearRateLimit(...keys: string[]): Promise<void> {
     /* best effort */
   }
 }
+
+/**
+ * IP-based limits are only meaningful behind a proxy that overwrites the
+ * client IP header. Without TRUST_PROXY=true every request would share one
+ * "local" bucket, so one attacker could lock out all users. Callers skip the
+ * IP buckets when this returns false.
+ */
+export function ipLimitEnabled(): boolean {
+  return process.env.TRUST_PROXY === "true";
+}

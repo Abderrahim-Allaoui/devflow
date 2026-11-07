@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "@/lib/auth";
 import {
   hashPassword,
   signToken,
@@ -53,7 +54,7 @@ describe("T3 — JWT token payload & cookie flags", () => {
   });
 
   it("verifyToken rejects a token with no tv (legacy/forged)", () => {
-    const legacy = jwt.sign({ sub: "u1", email: "a@b.co" }, "test-secret-12345678901234567890123456789012");
+    const legacy = jwt.sign({ sub: "u1", email: "a@b.co" }, JWT_SECRET);
     expect(verifyToken(legacy)).toBeNull();
   });
 

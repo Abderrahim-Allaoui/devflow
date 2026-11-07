@@ -10,10 +10,12 @@ RUN npm ci
 # prisma generate / migrate deploy match a postgresql:// DATABASE_URL.
 COPY prisma/schema.postgres.prisma ./prisma/schema.prisma
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npx prisma generate --schema prisma/schema.postgres.prisma
 
 COPY . .
 RUN npm run build
+# Keep only production deps (prisma is in "dependencies", so the CLI stays).
+RUN npm prune --omit=dev
 
 # ── Runtime stage ────────────────────────────────────────────
 FROM node:22-alpine AS runner
@@ -37,4 +39,4 @@ USER node
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npx next start -p 3000"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.postgres.prisma && npx next start -p 3000"]
