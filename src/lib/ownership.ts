@@ -1,13 +1,21 @@
 import { prisma } from "./prisma";
 
-/** Returns the board only if it belongs to the user, else null. */
-export async function getOwnedBoard(boardId: string, userId: string) {
+/** Returns the board only if it belongs to the user, else null.
+ *
+ * B7 — `taskLimit` caps tasks loaded per column so a single board view
+ * never pulls an unbounded number of tasks.
+ */
+export async function getOwnedBoard(
+  boardId: string,
+  userId: string,
+  taskLimit = 50,
+) {
   return prisma.board.findFirst({
     where: { id: boardId, ownerId: userId },
     include: {
       columns: {
         orderBy: { position: "asc" },
-        include: { tasks: { orderBy: { position: "asc" } } },
+        include: { tasks: { orderBy: { position: "asc" }, take: taskLimit } },
       },
     },
   });

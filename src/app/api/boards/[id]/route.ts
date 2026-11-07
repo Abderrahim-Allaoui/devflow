@@ -14,6 +14,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const board = await getOwnedBoard(id, user.id);
   if (!board) return jsonError(404, "Board not found");
 
+  // B7 — limit tasks loaded per column on the single-board view too.
   return NextResponse.json({ board });
 }
 

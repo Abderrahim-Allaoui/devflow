@@ -5,17 +5,19 @@ import { cleanString, jsonError } from "@/lib/api";
 
 const DEFAULT_COLUMNS = ["Backlog", "In progress", "Done"];
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
-  // B7 — paginate the board list; tasks are loaded only when a board is
-  // opened (fine for a demo, required for production).
-  const limit = 20;
+  // B7 — paginate the board list (cursor-based). Default page size 20.
+  const { searchParams } = new URL(req.url);
+  const cursor = searchParams.get("cursor");
+  const take = 20;
   const boards = await prisma.board.findMany({
     where: { ownerId: user.id },
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take: take + 1,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     include: {
       columns: {
         orderBy: { position: "asc" },
@@ -24,7 +26,11 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ boards });
+  const hasMore = boards.length > take;
+  const page = boards.slice(0, take);
+  const nextCursor = hasMore ? page[page.length - 1]?.id : null;
+
+  return NextResponse.json({ boards: page, nextCursor });
 }
 
 export async function POST(req: NextRequest) {

@@ -9,9 +9,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-devflow}
     env_file:
       - .env
-    # S9 — port not exposed to the host: only the app container can reach it.
-    # volumes:
-    #   - pgdata:/var/lib/postgresql/data
+    # S9 — Postgres data persisted on a named volume so it survives
+    # `docker compose down` / `up` cycles.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-devflow}"]
       interval: 5s

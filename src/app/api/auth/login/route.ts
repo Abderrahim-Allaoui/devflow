@@ -34,13 +34,21 @@ export async function POST(req: NextRequest) {
     return jsonError(400, `Password must be at most ${MAX_PASSWORD} characters`);
   }
 
-  // S3 — brute-force protection (per email and per IP, fixed window).
+  // S3 — brute-force protection (per email, per IP, and per IP+email).
+  // The IP+email key prevents an attacker from locking out all users of a
+  // known email address (denial of service via per-email lockout).
   const ip = clientIp(req.headers);
   const emailKey = `login:email:${cleanEmail}`;
   const ipKey = `login:ip:${ip}`;
+  const ipEmailKey = `login:ip+email:${ip}:${cleanEmail}`;
+  const MAX_PER_EMAIL = 5;
+  const MAX_PER_IP = 20;
+  const MAX_PER_IP_EMAIL = 3;
+
   const emailOk = await hitRateLimit(emailKey, MAX_PER_EMAIL);
   const ipOk = await hitRateLimit(ipKey, MAX_PER_IP);
-  if (!emailOk || !ipOk) {
+  const ipEmailOk = await hitRateLimit(ipEmailKey, MAX_PER_IP_EMAIL);
+  if (!emailOk || !ipOk || !ipEmailOk) {
     return jsonError(429, "Too many attempts — try again in a few minutes");
   }
 
@@ -51,7 +59,7 @@ export async function POST(req: NextRequest) {
     return jsonError(401, "Invalid email or password");
   }
 
-  await clearRateLimit(emailKey, ipKey);
+  await clearRateLimit(emailKey, ipKey, ipEmailKey);
   await setSessionCookie({
     sub: user.id,
     email: user.email,

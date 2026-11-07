@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import jwt from "jsonwebtoken";
 import {
   hashPassword,
   signToken,
@@ -41,5 +42,23 @@ describe("JWT session tokens", () => {
   it("rejects garbage input", () => {
     expect(verifyToken("not-a-token")).toBeNull();
     expect(verifyToken("")).toBeNull();
+  });
+});
+
+describe("T3 — JWT token payload & cookie flags", () => {
+  it("signToken includes tv in the payload", () => {
+    const token = signToken({ sub: "u1", email: "a@b.co", name: "Ada", tv: 3 });
+    const decoded = verifyToken(token);
+    expect(decoded?.tv).toBe(3);
+  });
+
+  it("verifyToken rejects a token with no tv (legacy/forged)", () => {
+    const legacy = jwt.sign({ sub: "u1", email: "a@b.co" }, "test-secret-12345678901234567890123456789012");
+    expect(verifyToken(legacy)).toBeNull();
+  });
+
+  it("verifyToken rejects a token signed with a different secret", () => {
+    const wrongSecret = jwt.sign({ sub: "u1", tv: 0 }, "wrong-secret");
+    expect(verifyToken(wrongSecret)).toBeNull();
   });
 });

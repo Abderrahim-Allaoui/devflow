@@ -4,7 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { POST } from "@/app/api/auth/register/route";
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: { user: { create: vi.fn() } },
+  prisma: {
+    user: { create: vi.fn() },
+    loginAttempt: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn().mockResolvedValue({}),
+      update: vi.fn().mockResolvedValue({}),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+  },
 }));
 vi.mock("@/lib/auth", () => ({
   hashPassword: vi.fn(async () => "hash"),

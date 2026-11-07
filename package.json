@@ -2,7 +2,7 @@
   "name": "devflow",
   "version": "1.0.0",
   "private": true,
-  "description": "Full-stack kanban SaaS — Next.js 15, Prisma, JWT auth, PostgreSQL/SQLite, Docker",
+  "description": "Full-stack kanban SaaS — Next.js 15 App Router, React 19, TypeScript strict, Prisma 6, JWT auth, PostgreSQL/SQLite, Docker, Vitest, GitHub Actions",
   "author": "Abderrahim Allaoui",
   "license": "MIT",
   "scripts": {
@@ -19,14 +19,12 @@
     "db:studio": "prisma studio",
     "setup": "prisma generate && prisma db push && tsx prisma/seed.ts"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@prisma/client": "^6.2.0",
     "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
     "next": "^15.1.6",
+    "prisma": "^6.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -36,7 +34,6 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "prisma": "^6.2.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^3.0.0"
