@@ -7,3 +7,9 @@ coverage
 README.md
 docs
 scripts
+tests
+*.tsbuildinfo
+.vercel
+.agents
+skills-lock.json
+.github

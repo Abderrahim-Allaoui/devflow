@@ -104,5 +104,11 @@ export async function setSessionCookie(payload: TokenPayload) {
 
 export async function clearSessionCookie() {
   const store = await cookies();
-  store.set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+  store.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: COOKIE_SECURE,
+    path: "/",
+    maxAge: 0,
+  });
 }

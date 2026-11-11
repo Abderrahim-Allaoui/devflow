@@ -6,9 +6,8 @@ COPY package.json package-lock.json* ./
 # B5 — no `|| npm install` fallback: a broken lockfile must fail the build.
 RUN npm ci
 
-# B4 — use the Postgres schema for the production image so that
+# Use the Postgres schema for the production image so that
 # prisma generate / migrate deploy match a postgresql:// DATABASE_URL.
-COPY prisma/schema.postgres.prisma ./prisma/schema.prisma
 COPY prisma ./prisma
 RUN npx prisma generate --schema prisma/schema.postgres.prisma
 
@@ -36,7 +35,7 @@ COPY --from=builder /app/next.config.mjs ./next.config.mjs
 # B5 — non-root user.
 USER node
 # B5 — healthcheck on a public route that returns 200.
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.postgres.prisma && npx next start -p 3000"]

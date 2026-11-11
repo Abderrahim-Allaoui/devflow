@@ -43,31 +43,45 @@ npm run dev
 
 ## 3. PostgreSQL (local or hosted)
 
-```bash
-# 1. point the schema at Postgres
-#    prisma/schema.prisma → provider = "postgresql"
-# 2. set the connection string in .env
-DATABASE_URL="postgresql://user:password@localhost:5432/devflow"
+Keep the **Postgres** schema (`prisma/schema.postgres.prisma`) — the default
+`prisma/schema.prisma` is SQLite-only. Apply the migration:
 
-npx prisma db push
+```bash
+DATABASE_URL="postgresql://user:password@host:5432/devflow" \
+  npx prisma migrate deploy --schema prisma/schema.postgres.prisma
 npm run dev
 ```
 
-For a hosted database (Neon, Supabase, Railway…) the same steps apply — just
-paste the connection string. In serverless environments use the **pooled** URL
-and the unpooled one for migrations.
+For a hosted database (Neon, Supabase, Railway…) the same applies — use the
+pooled URL for the app runtime, and the unpooled URL for migrations.
+
+> Already created a database with `prisma db push`? Mark the baseline as
+> applied once so `migrate deploy` won't try to recreate the tables:
+>
+> ```bash
+> npx prisma migrate resolve --applied 20261107163000_init \
+>   --schema prisma/schema.postgres.prisma
+> ```
 
 ---
 
 ## 4. Docker
 
 ```bash
-docker compose up --build     # app on :3000, postgres on :5432
+cp .env.example .env
+# edit .env: set POSTGRES_PASSWORD and JWT_SECRET (both are required,
+# docker compose refuses to start without them)
+docker compose up --build   # → http://localhost:3000
 ```
 
-`docker-compose.yml` ships the app + a Postgres service. Set `DATABASE_URL` to
-`postgresql://devflow:devflow@db:5432/devflow` and switch the Prisma provider
-to `postgresql` before building.
+Notes:
+
+- `docker-compose.yml` ships the app + a Postgres service; Postgres is **not**
+  published on the host — it is reachable only inside the compose network.
+- The `DATABASE_URL` in `.env` is ignored for the app container (compose sets it
+  explicitly), but `.env` is mandatory — compose fails if it is missing.
+- `POSTGRES_PASSWORD` is interpolated raw into `DATABASE_URL`, so avoid `@`, `:`,
+  `/`, `#`, `%` in the password (or URL-encode them).
 
 ---
 
@@ -85,13 +99,12 @@ Set these environment variables in production:
 | `DATABASE_URL` | Postgres connection string (**required**) |
 | `JWT_SECRET` | long random string, e.g. `openssl rand -base64 32` |
 | `COOKIE_SECURE` | `true` when served over HTTPS (default in production) |
+| `TRUST_PROXY` | `true` when behind a reverse proxy / Vercel (enables per-IP limits) |
 | `NEXT_PUBLIC_APP_NAME` | optional — white-label the app name |
 
 ---
 
 ## 6. Deploy on Vercel
-
-The repo ships a `vercel.json` with a ready-to-use Next.js configuration:
 
 ```bash
 vercel link --project your-project
@@ -102,22 +115,24 @@ For a hosted database, add the Neon (or any Postgres) integration in the
 Vercel dashboard, then apply the schema with the production schema:
 
 ```bash
-npx prisma generate --schema prisma/schema.postgres.prisma
-npx prisma db push     --schema prisma/schema.postgres.prisma
-npm run build:vercel
+DATABASE_URL="..." npx prisma migrate deploy --schema prisma/schema.postgres.prisma
 ```
+
+(The Vercel build runs `build:vercel` = `prisma generate --schema
+prisma/schema.postgres.prisma && next build`, see `vercel.json`.)
 
 ---
 
 ## 7. Tests & quality
 
 ```bash
-npm test          # Vitest (auth primitives + API validation)
+npm test          # Vitest (auth, rate limiting, validation, integration)
 npm run typecheck # tsc --noEmit, strict mode
-npm run lint      # ESLint
+npm run lint      # tsc --noEmit (same check, kept for convenience)
 ```
 
-CI runs the three commands above on every push (see `.github/workflows/ci.yml`).
+CI runs install, generate, test, typecheck and build on every push (see
+`.github/workflows/ci.yml`).
 
 ---
 
@@ -127,6 +142,8 @@ CI runs the three commands above on every push (see `.github/workflows/ci.yml`).
 | --- | --- |
 | `Environment variable not found: DATABASE_URL` | copy `.env.example` to `.env` |
 | `P1001 Can't reach database server` | wrong host/port, or `?sslmode=require` missing |
+| `P3005 The database server could not be reached` / “migration not applied” | run `npx prisma migrate resolve --applied 20261107163000_init` (see §3) |
+| `P3009 migrate found failed migrations` | fix the migration folder, or run with `prisma migrate dev` locally |
 | Login returns 401 but the password is right | cookie blocked → set `COOKIE_SECURE=false` for plain HTTP |
 | `prisma generate` complains about the provider | the provider must be a literal (`"sqlite"` / `"postgresql"`) |
 | Port 3000 already in use | `PORT=3001 npm run dev` |
@@ -145,7 +162,9 @@ CI runs the three commands above on every push (see `.github/workflows/ci.yml`).
 | `GET · POST` | `/api/boards` | List / create boards |
 | `GET · PATCH · DELETE` | `/api/boards/:id` | Read / rename / delete a board |
 | `POST` | `/api/boards/:id/columns` | Add a column |
+| `PATCH · DELETE` | `/api/boards/:id/columns/:columnId` | Rename / delete a column |
 | `POST` | `/api/tasks` | Create a task |
 | `PATCH · DELETE` | `/api/tasks/:id` | Edit / move / delete a task |
+| `GET` | `/api/health` | Health check (`?deep=1` pings the DB) |
 
 All board, column and task endpoints are scoped to the authenticated owner.

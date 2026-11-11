@@ -28,6 +28,13 @@ const FEATURES = [
   },
 ];
 
+const TIERS = [
+  { name: "Personal", price: "€39", href: "https://allaoui67.gumroad.com/l/fyimeh", blurb: "1 dev, commercial use" },
+  { name: "Commercial", price: "€99", href: "https://allaoui67.gumroad.com/l/jempqs", blurb: "Team commercial licence" },
+  { name: "Studio", price: "€199", href: "https://allaoui67.gumroad.com/l/edecsm", blurb: "Studio / small agency" },
+  { name: "Agency", price: "€349", href: "https://allaoui67.gumroad.com/l/inimos", blurb: "Agency + 1yr updates" },
+];
+
 export default function Home() {
   return (
     <>
@@ -69,6 +76,33 @@ export default function Home() {
               <p>{f.body}</p>
             </article>
           ))}
+        </section>
+
+        <section className="pricing" aria-label="Pricing">
+          <h2>One-time payment. Yours forever.</h2>
+          <div className="pricing-grid">
+            {TIERS.map((t) => (
+              <article key={t.name} className="feature pricing-card">
+                <h3>{t.name}</h3>
+                <div className="price">{t.price}</div>
+                <p>{t.blurb}</p>
+                <a
+                  className="btn btn-primary"
+                  href={t.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Buy on Gumroad
+                </a>
+              </article>
+            ))}
+          </div>
+          <p className="sub">
+            Try the demo first —{" "}
+            <Link href="/login">
+              <code>demo@devflow.app / devflow123</code>
+            </Link>
+          </p>
         </section>
       </main>
 

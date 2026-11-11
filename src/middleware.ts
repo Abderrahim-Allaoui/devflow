@@ -7,9 +7,11 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (!token && (pathname === "/board" || pathname.startsWith("/board/"))) {
+    // Cookie presence only (API routes verify the token independently).
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    url.search = "";
+    url.searchParams.set("next", pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }
 

@@ -17,16 +17,17 @@ const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 /**
  * Client IP behind a proxy / Vercel edge.
  *
- * S3 — IP spoofing: X-Forwarded-For is only trusted when TRUST_PROXY is set
- * (meaning the app sits behind a known reverse proxy that overwrites the
- * header). Without it, an attacker could send a different X-Forwarded-For
- * on each request and bypass the per-IP limit.
+ * The deployment proxy is assumed to APPEND its observed peer to
+ * X-Forwarded-For (the common `proxy_add_x_forwarded_for` behaviour), so the
+ * LAST entry is the one the proxy added — the first entry is entirely
+ * client-controlled and must not be trusted for bucketing. Vercel sets a
+ * single-entry header, so last === first there either way.
  */
 export function clientIp(headers: Headers): string {
   const trustProxy = process.env.TRUST_PROXY === "true";
   if (trustProxy) {
     const fwd = headers.get("x-forwarded-for");
-    if (fwd) return fwd.split(",")[0].trim();
+    if (fwd) return fwd.split(",").pop()!.trim();
     return headers.get("x-real-ip") || "local";
   }
   // No trusted proxy: we cannot safely derive the client IP from headers.
@@ -38,27 +39,44 @@ export function clientIp(headers: Headers): string {
  * Returns false when the key has already used up `max` attempts in the
  * current window (i.e. the caller must be rejected).
  *
- * S3 — fail-closed: a database error rejects the request instead of
- * silently disabling rate limiting.
+ * The counter is bumped with a single conditional UPDATE (fast path) and the
+ * window is opened with a single upsert — two concurrent requests cannot both
+ * pass at (max - 1) anymore. Fails closed on DB error.
  */
 export async function hitRateLimit(key: string, max: number): Promise<boolean> {
   const now = new Date();
+  const cutoff = new Date(now.getTime() - WINDOW_MS);
+  // Cap stored key size — attackers control this string.
+  const safeKey = key.length > 256 ? key.slice(0, 256) : key;
   try {
-    const row = await prisma.loginAttempt.findUnique({ where: { key } });
-    if (!row || now.getTime() - row.windowStart.getTime() > WINDOW_MS) {
-      await prisma.loginAttempt.upsert({
-        where: { key },
-        update: { count: 1, windowStart: now },
-        create: { key, count: 1, windowStart: now },
+    // 1. Fresh window with headroom — atomic bump.
+    const bumpFresh = () =>
+      prisma.loginAttempt.updateMany({
+        where: { key: safeKey, windowStart: { gt: cutoff }, count: { lt: max } },
+        data: { count: { increment: 1 } },
+      });
+    if ((await bumpFresh()).count === 1) return true;
+
+    // 2. No usable fresh window: try to open one. Create if absent; one caller
+    //    wins. If the row exists but is stale, reset it — one caller wins.
+    try {
+      await prisma.loginAttempt.create({
+        data: { key: safeKey, count: 1, windowStart: now },
       });
       return true;
+    } catch {
+      const reset = await prisma.loginAttempt.updateMany({
+        where: { key: safeKey, windowStart: { lte: cutoff } },
+        data: { count: 1, windowStart: now },
+      });
+      if (reset.count === 1) return true;
     }
-    if (row.count >= max) return false;
-    await prisma.loginAttempt.update({
-      where: { key },
-      data: { count: { increment: 1 } },
-    });
-    return true;
+
+    // 3. Someone else opened/reset the window meanwhile — retry the bump once.
+    if ((await bumpFresh()).count === 1) return true;
+
+    // Fresh window already at/over the limit (or another thread filled it).
+    return false;
   } catch {
     // Fail-closed: on DB error, reject the request rather than disabling the
     // limiter silently. This is a deliberate trade-off (availability vs.
@@ -71,6 +89,12 @@ export async function hitRateLimit(key: string, max: number): Promise<boolean> {
 export async function clearRateLimit(...keys: string[]): Promise<void> {
   try {
     await prisma.loginAttempt.deleteMany({ where: { key: { in: keys } } });
+    // Opportunistic sweep of expired windows so the table does not grow
+    // unboundedly. Best-effort piggybacked on a rare write path.
+    const cutoff = new Date(Date.now() - WINDOW_MS);
+    await prisma.loginAttempt.deleteMany({
+      where: { windowStart: { lt: cutoff } },
+    });
   } catch {
     /* best effort */
   }

@@ -242,9 +242,16 @@ export default function Board({ user }: { user: { name: string } }) {
 
       <main className="board-page">
         {error && (
-          <div className="auth-error" onClick={() => setError(null)} role="alert">
-            {error}
-          </div>
+          <button
+            type="button"
+            className="auth-error"
+            onClick={() => setError(null)}
+            role="alert"
+            aria-label="Dismiss error"
+            style={{ width: "100%", textAlign: "left", cursor: "pointer", border: 0 }}
+          >
+            {error} <span aria-hidden="true" style={{ opacity: 0.6 }}>✕</span>
+          </button>
         )}
 
         <div className="board-top">
@@ -348,8 +355,8 @@ function TaskModal({
       }}
       role="presentation"
     >
-      <div className="modal" role="dialog" aria-modal="true">
-        <h2>Edit task</h2>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="edit-task-heading">
+        <h2 id="edit-task-heading">Edit task</h2>
 
         <div className="field">
           <label htmlFor="task-title">Title</label>

@@ -21,14 +21,24 @@ export async function POST(req: NextRequest, { params }: Params) {
     return jsonError(400, "Invalid JSON body");
   }
 
+  if (typeof (body as Record<string, unknown>)?.title === "string" &&
+      ((body as Record<string, unknown>).title as string).trim().length > 80) {
+    return jsonError(400, "Column title must be at most 80 characters");
+  }
   const title =
     body && typeof body === "object"
       ? cleanString((body as Record<string, unknown>).title, 80)
       : null;
   if (!title) return jsonError(400, "Column title is required");
 
-  const column = await prisma.column.create({
-    data: { title, boardId: board.id, position: board.columns.length },
+  const column = await prisma.$transaction(async (tx) => {
+    const max = await tx.column.aggregate({
+      where: { boardId: board.id },
+      _max: { position: true },
+    });
+    return tx.column.create({
+      data: { title, boardId: board.id, position: (max._max.position ?? -1) + 1 },
+    });
   });
 
   return NextResponse.json({ column }, { status: 201 });

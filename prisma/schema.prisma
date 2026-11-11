@@ -30,6 +30,8 @@ model LoginAttempt {
   key         String   @id
   count       Int      @default(0)
   windowStart DateTime @default(now())
+
+  @@index([windowStart])
 }
 
 model Board {
@@ -41,7 +43,7 @@ model Board {
   updatedAt DateTime @updatedAt
   columns   Column[]
 
-  @@index([ownerId])
+  @@index([ownerId, createdAt, id])
 }
 
 model Column {
@@ -67,5 +69,5 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([columnId])
+  @@index([columnId, position])
 }

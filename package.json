@@ -5,7 +5,9 @@
   "description": "Full-stack kanban SaaS — Next.js 15 App Router, React 19, TypeScript strict, Prisma 6, JWT auth, PostgreSQL/SQLite, Docker, Vitest, GitHub Actions",
   "author": "Abderrahim Allaoui",
   "license": "MIT",
+  "engines": { "node": ">=20" },
   "scripts": {
+    "lint": "tsc --noEmit",
     "dev": "next dev",
     "build": "next build",
     "build:vercel": "prisma generate --schema prisma/schema.postgres.prisma && next build",

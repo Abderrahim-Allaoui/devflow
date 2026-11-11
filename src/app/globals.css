@@ -542,3 +542,13 @@ a {
     transition: none !important;
   }
 }
+
+/* Pricing section */
+.pricing { text-align: center; padding: 2rem 1rem 3rem; }
+.pricing h2 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; max-width: 880px; margin: 0 auto 1.25rem; }
+.pricing-card { display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
+.pricing-card .price { font-size: 2rem; font-weight: 700; }
+.pricing-card .btn { width: 100%; justify-content: center; }
+.pricing .sub { opacity: 0.85; }
+.pricing .sub code { background: rgba(0,0,0,0.35); padding: 0.1rem 0.4rem; border-radius: 4px; }

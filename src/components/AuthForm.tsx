@@ -41,8 +41,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
+      // Only same-origin paths allowed — reject absolute and protocol-relative URLs.
       const next = params.get("next");
-      router.push(next && next.startsWith("/") ? next : "/board");
+      const safeNext =
+        next && /^\/(?!\/)/.test(next) ? next : "/board";
+      router.push(safeNext);
       router.refresh();
     } catch {
       setError("Network error — please try again");
@@ -61,9 +64,13 @@ export default function AuthForm({ mode }: { mode: Mode }) {
             : "Sign in to your DevFlow workspace."}
         </p>
 
-        {error && <div className="auth-error">{error}</div>}
+        {error && (
+          <div className="auth-error" role="alert">
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={onSubmit} noValidate>
+        <form onSubmit={onSubmit}>
           {isRegister && (
             <div className="field">
               <label htmlFor="name">Name</label>

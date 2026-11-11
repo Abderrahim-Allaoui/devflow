@@ -35,21 +35,25 @@ export function clampPosition(target: number, siblingCount: number): number {
 
 /**
  * Compact siblings around `newIndex` so positions become 0..n-1 (B1/B3).
- * Returns the list of (id, desiredPosition) updates to apply.
+ * Returns the list of (id, desiredPosition) updates to apply. Planning is
+ * derived from the target array only, so it stays correct even if the input
+ * already contains duplicates.
  */
 export function normalizeColumnPlan(
   siblings: { id: string; position: number }[],
   newIndex: number,
   excludeId: string,
 ): { id: string; position: number }[] {
-  return siblings
+  const kept = siblings
     .filter((t) => t.id !== excludeId)
-    .map((t, i) => ({
-      id: t.id,
-      position: i < newIndex ? i : i + 1,
-    }))
-    .filter((u) => {
-      const cur = siblings.find((t) => t.id === u.id);
-      return cur && cur.position !== u.position;
-    });
+    .slice()
+    .sort((a, b) => a.position - b.position);
+  const target = kept.map((t, i) => ({
+    id: t.id,
+    position: i < newIndex ? i : i + 1,
+  }));
+  return target.filter((u) => {
+    const cur = kept.find((t) => t.id === u.id);
+    return cur && cur.position !== u.position;
+  });
 }

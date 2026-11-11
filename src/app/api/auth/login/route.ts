@@ -9,8 +9,6 @@ import { MAX_PASSWORD } from "@/lib/validation";
 const DUMMY_HASH = "$2a$10$CwTycUXWue0Thq9StjUM0uJ8.4Dg0wG9pJ9ZyZkHlMhp7F4mYOc6e";
 
 // S3 — 5 attempts per 15 min for an email and for an IP.
-const MAX_PER_EMAIL = 5;
-const MAX_PER_IP = 20;
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -27,7 +25,7 @@ export async function POST(req: NextRequest) {
   const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
   const pass = typeof password === "string" ? password : "";
 
-  if (!cleanEmail || !pass) {
+  if (!cleanEmail || cleanEmail.length > 254 || !pass) {
     return jsonError(400, "Email and password are required");
   }
   if (pass.length > MAX_PASSWORD) {

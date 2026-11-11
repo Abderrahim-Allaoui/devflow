@@ -13,9 +13,9 @@
 [![Tests](https://img.shields.io/badge/tests-Vitest-6E9F18?logo=vitest)](https://vitest.dev)
 
 *A clean reference project: REST API, JWT auth, drag & drop, Docker.
-Unit tests cover auth primitives and API validation; ownership and
-cross-user access tests are added (see src/lib/validation.ts shared rules),
-integration tests against a real database are tracked as open work.*
+Unit tests cover auth primitives, API validation and rate limiting;
+ownership/cross-user access tests and integration tests against a real
+database are included (see `tests/integration.test.ts`).*
 
 > 🛒 **Using DevFlow in a client or paid product?** A commercial license of the
 > template is available → [devflow-license.vercel.app](https://devflow-license.vercel.app)
@@ -56,7 +56,7 @@ integration tests against a real database are tracked as open work.*
 - 🧱 **Typed REST API** — Next.js route handlers + Prisma, with **ownership checks** on every resource
 - 🐘 **PostgreSQL or SQLite** — SQLite by default (zero setup), one-line switch to Postgres
 - 🐳 **Docker** — multi-stage Dockerfile + compose stack (app + db). Runtime image installs production dependencies only, runs as non-root, migrations via `prisma migrate deploy`.
-- ✅ **Tested** — Vitest unit tests for auth and API validation (shared rules in src/lib/validation.ts), plus ownership/cross-user access tests; TypeScript strict everywhere. Integration tests against a real database are open work.
+- ✅ **Tested** — Vitest unit tests for auth, validation and rate limiting (shared rules in src/lib/validation.ts), plus ownership/cross-user access tests and integration tests against a real database; TypeScript strict everywhere.
 - 🌗 **Dark UI by design** — hand-rolled CSS design system, no UI framework tax
 ## 🛠️ Tech stack
 
@@ -87,8 +87,7 @@ Demo account (after seeding): **demo@devflow.app** / **devflow123**
 ### 2. Docker (PostgreSQL)
 
 ```bash
-# 1. switch provider: prisma/schema.prisma → provider = "postgresql"
-# 2. set DATABASE_URL in .env (see docker-compose.yml)
+cp .env.example .env   # then set POSTGRES_PASSWORD and JWT_SECRET (both required)
 docker compose up --build     # → http://localhost:3000
 ```
 
@@ -101,11 +100,11 @@ The live deployment runs on **Vercel** with a managed **PostgreSQL (Neon)** data
 
 ```bash
 npx prisma generate --schema prisma/schema.postgres.prisma
-npx prisma db push     --schema prisma/schema.postgres.prisma
+npx prisma migrate deploy --schema prisma/schema.postgres.prisma
 npm run build:vercel   # generates the Postgres client, then builds
 ```
 
-Environment variables expected on the host: `DATABASE_URL`, `JWT_SECRET`, `COOKIE_SECURE=true`.
+Environment variables expected on the host: `DATABASE_URL`, `JWT_SECRET`, `COOKIE_SECURE=true`, `TRUST_PROXY=true`.
 
 **Live demo → https://devflow-black-eight.vercel.app**
 
@@ -130,6 +129,7 @@ All endpoints return JSON. Cookie `devflow_token` (httpOnly) = authenticated ses
 | `POST` | `/api/boards` | ✅ | Create board `{title}` (auto: Backlog / In progress / Done) |
 | `GET · PATCH · DELETE` | `/api/boards/:id` | ✅ | Read / rename / delete a board |
 | `POST` | `/api/boards/:id/columns` | ✅ | Add a column `{title}` |
+| `PATCH · DELETE` | `/api/boards/:id/columns/:columnId` | ✅ | Rename / delete a column |
 | `POST` | `/api/tasks` | ✅ | Create task `{columnId,title,description?,priority?}` |
 | `PATCH` | `/api/tasks/:id` | ✅ | Edit / move `{title?,description?,priority?,columnId?,position?}` |
 | `DELETE` | `/api/tasks/:id` | ✅ | Delete a task |

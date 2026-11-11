@@ -10,14 +10,29 @@ export async function GET(req: NextRequest) {
   if (!user) return jsonError(401, "Not authenticated");
 
   // B7 — paginate the board list (cursor-based). Default page size 20.
+  // Deterministic order (createdAt + id tie-breaker) so the cursor can never
+  // skip or duplicate rows that share a millisecond timestamp.
   const { searchParams } = new URL(req.url);
-  const cursor = searchParams.get("cursor");
+  const cursorParam = searchParams.get("cursor");
   const take = 20;
+  let cursorWhere: unknown = undefined;
+  if (cursorParam) {
+    try {
+      const c = JSON.parse(Buffer.from(cursorParam, "base64url").toString("utf8"));
+      cursorWhere = {
+        OR: [
+          { createdAt: { lt: new Date(c.c) } },
+          { createdAt: new Date(c.c), id: { lt: c.i } },
+        ],
+      };
+    } catch {
+      return jsonError(400, "Invalid cursor");
+    }
+  }
   const boards = await prisma.board.findMany({
-    where: { ownerId: user.id },
-    orderBy: { createdAt: "desc" },
+    where: { ownerId: user.id, ...(cursorWhere as Record<string, unknown>) },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: take + 1,
-    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     include: {
       columns: {
         orderBy: { position: "asc" },
@@ -28,7 +43,10 @@ export async function GET(req: NextRequest) {
 
   const hasMore = boards.length > take;
   const page = boards.slice(0, take);
-  const nextCursor = hasMore ? page[page.length - 1]?.id : null;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last
+    ? Buffer.from(JSON.stringify({ c: last.createdAt, i: last.id })).toString("base64url")
+    : null;
 
   return NextResponse.json({ boards: page, nextCursor });
 }
@@ -44,6 +62,10 @@ export async function POST(req: NextRequest) {
     return jsonError(400, "Invalid JSON body");
   }
 
+  if (typeof (body as Record<string, unknown>)?.title === "string" &&
+      ((body as Record<string, unknown>).title as string).trim().length > 120) {
+    return jsonError(400, "Board title must be at most 120 characters");
+  }
   const title =
     body && typeof body === "object"
       ? cleanString((body as Record<string, unknown>).title, 120)

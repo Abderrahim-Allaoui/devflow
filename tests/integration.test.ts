@@ -40,7 +40,7 @@ beforeEach(async () => {
     env: { ...process.env, DATABASE_URL: `file:${dbPath}` },
     cwd: process.cwd(),
   });
-});
+}, 120_000);
 
 afterEach(async () => {
   await prisma.$disconnect().catch(() => {});
@@ -162,7 +162,7 @@ describe("task positions B1/B2/B3 (real DB)", () => {
     expect(after[2].title).toBe("T0");
   });
 
-  it("B2 — concurrent moves stay a compact permutation (inside one tx)", async () => {
+  it("B2 - two moves in sequence stay a compact permutation", async () => {
     const { columnId } = await seedColumnAsync();
     const tasks = await prisma.task.findMany({
       where: { columnId },
