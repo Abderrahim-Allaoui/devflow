@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie, verifyPassword } from "@/lib/auth";
-import { jsonError } from "@/lib/api";
+import { guardMutation, jsonError } from "@/lib/api";
 import { clearRateLimit, clientIp, hitRateLimit, ipLimitEnabled } from "@/lib/rate-limit";
 import { MAX_PASSWORD } from "@/lib/validation";
 
@@ -11,6 +11,8 @@ const DUMMY_HASH = "$2a$10$CwTycUXWue0Thq9StjUM0uJ8.4Dg0wG9pJ9ZyZkHlMhp7F4mYOc6e
 // S3 — 5 attempts per 15 min for an email and for an IP.
 
 export async function POST(req: NextRequest) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   let body: unknown;
   try {
     body = await req.json();
@@ -32,9 +34,11 @@ export async function POST(req: NextRequest) {
     return jsonError(400, `Password must be at most ${MAX_PASSWORD} characters`);
   }
 
-  // S3 — brute-force protection (per email, per IP, and per IP+email).
+  // S3 — brute-force protection (per IP, and per IP+email).
   // The IP+email key prevents an attacker from locking out all users of a
-  // known email address (denial of service via per-email lockout).
+  // known email address by stuffing from rotating IPs, while the per-email
+  // counter is deliberately NOT used to reject: a shared email key must not
+  // lock the legitimate owner out of their account from a different IP.
   const ip = clientIp(req.headers);
   const emailKey = `login:email:${cleanEmail}`;
   const ipKey = `login:ip:${ip}`;
@@ -43,10 +47,11 @@ export async function POST(req: NextRequest) {
   const MAX_PER_IP = 20;
   const MAX_PER_IP_EMAIL = 3;
 
-  const emailOk = await hitRateLimit(emailKey, MAX_PER_EMAIL);
+  // Per-email counter is maintained for observability only, never to reject.
+  await hitRateLimit(emailKey, MAX_PER_EMAIL);
   const ipOk = (!ipLimitEnabled() || (await hitRateLimit(ipKey, MAX_PER_IP)));
   const ipEmailOk = (!ipLimitEnabled() || (await hitRateLimit(ipEmailKey, MAX_PER_IP_EMAIL)));
-  if (!emailOk || !ipOk || !ipEmailOk) {
+  if (!ipOk || !ipEmailOk) {
     return jsonError(429, "Too many attempts — try again in a few minutes");
   }
 
@@ -57,7 +62,9 @@ export async function POST(req: NextRequest) {
     return jsonError(401, "Invalid email or password");
   }
 
-  await clearRateLimit(emailKey, ipKey, ipEmailKey);
+  // Clear only this caller's keys — DO NOT clear the shared IP bucket,
+  // or a valid login would reset the per-IP limiter for everyone behind it.
+  await clearRateLimit(emailKey, ipEmailKey);
   await setSessionCookie({
     sub: user.id,
     email: user.email,

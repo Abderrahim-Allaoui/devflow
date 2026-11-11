@@ -4,11 +4,11 @@ import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 const FEATURES = [
   {
     title: "Drag & drop kanban",
-    body: "Move tasks across columns in real time — native HTML5 DnD, zero extra dependencies.",
+    body: "Move tasks across columns — native HTML5 DnD plus keyboard-accessible modal controls (select a column, move up/down).",
   },
   {
     title: "JWT auth done right",
-    body: "bcrypt-hashed passwords, httpOnly cookies, 7-day sessions and zero user enumeration.",
+    body: "bcrypt-hashed passwords, httpOnly cookies, 7-day sessions, same-message login errors (timing-equalised).",
   },
   {
     title: "Type-safe REST API",
@@ -16,11 +16,11 @@ const FEATURES = [
   },
   {
     title: "Production-ready",
-    body: "Docker image with multi-stage build, PostgreSQL or SQLite — deploys in one command.",
+    body: "Docker image (multi-stage, non-root) with `prisma migrate deploy` on startup — deploys in one command.",
   },
   {
     title: "Tested & typed",
-    body: "Strict TypeScript across the stack and Vitest covering auth primitives and API validation.",
+    body: "TypeScript strict everywhere and Vitest suites — unit, auth/rate-limit, real-DB integration (SQLite) and route-level tests.",
   },
   {
     title: "Clean architecture",
@@ -29,10 +29,10 @@ const FEATURES = [
 ];
 
 const TIERS = [
-  { name: "Personal", price: "€39", href: "https://allaoui67.gumroad.com/l/fyimeh", blurb: "1 dev, commercial use" },
-  { name: "Commercial", price: "€99", href: "https://allaoui67.gumroad.com/l/jempqs", blurb: "Team commercial licence" },
-  { name: "Studio", price: "€199", href: "https://allaoui67.gumroad.com/l/edecsm", blurb: "Studio / small agency" },
-  { name: "Agency", price: "€349", href: "https://allaoui67.gumroad.com/l/inimos", blurb: "Agency + 1yr updates" },
+  { name: "Personal", price: "€39", href: "https://allaoui67.gumroad.com/l/fyimeh", blurb: "Learning & portfolio (non-commercial)" },
+  { name: "Commercial", price: "€99", href: "https://allaoui67.gumroad.com/l/jempqs", blurb: "Client & commercial work (SaaS OK)" },
+  { name: "Studio", price: "€199", href: "https://allaoui67.gumroad.com/l/edecsm", blurb: "Unlimited clients + resale rights" },
+  { name: "Agency", price: "€349", href: "https://allaoui67.gumroad.com/l/inimos", blurb: "Agency-wide + resale + priority support" },
 ];
 
 export default function Home() {

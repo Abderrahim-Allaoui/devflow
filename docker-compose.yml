@@ -29,6 +29,11 @@ services:
       # B4 — single source of truth: provider + DATABASE_URL match schema.prisma.
       DATABASE_URL: postgresql://${POSTGRES_USER:-devflow}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-devflow}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      # Local Docker serves over plain http, so Secure cookies must be off here.
+      # TLS-terminated production deployments should leave this unset (Secure by default).
+      COOKIE_SECURE: "false"
+      # Enables per-IP rate limits behind the compose proxy.
+      TRUST_PROXY: "true"
       PORT: 3000
     ports:
       - "3000:3000"

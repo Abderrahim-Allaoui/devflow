@@ -10,15 +10,26 @@ export async function getOwnedBoard(
   userId: string,
   taskLimit = 50,
 ) {
-  return prisma.board.findFirst({
+  const board = await prisma.board.findFirst({
     where: { id: boardId, ownerId: userId },
     include: {
       columns: {
         orderBy: { position: "asc" },
-        include: { tasks: { orderBy: { position: "asc" }, take: taskLimit } },
+        include: {
+          tasks: { orderBy: { position: "asc" }, take: taskLimit },
+          _count: { select: { tasks: true } },
+        },
       },
     },
   });
+  if (!board) return null;
+  return {
+    ...board,
+    columns: board.columns.map(({ _count, ...column }) => ({
+      ...column,
+      taskCount: _count.tasks,
+    })),
+  };
 }
 
 /** Returns the column only if its board belongs to the user, else null. */

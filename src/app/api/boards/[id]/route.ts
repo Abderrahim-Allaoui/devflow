@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { cleanString, jsonError } from "@/lib/api";
+import { guardMutation, cleanString, jsonError } from "@/lib/api";
 import { getOwnedBoard } from "@/lib/ownership";
 
 type Params = { params: Promise<{ id: string }> };
@@ -19,6 +19,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
@@ -53,7 +55,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ board: updated });
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 

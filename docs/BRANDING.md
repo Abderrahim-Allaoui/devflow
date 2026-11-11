@@ -71,7 +71,8 @@ Append this block to `globals.css` to offer a light skin:
 
 ## 3. Logo / favicon
 
-- Favicon: replace `src/app/favicon.ico` (or add `src/app/icon.svg`).
+- Favicon: replace `src/app/icon.svg` (included in the repo; Next.js picks it up
+automatically — no `<link>` tag required).
 - The header logo is text-based (`APP_NAME`), styled by `.logo` in
   `globals.css`. To use an image instead, swap the markup in
   `src/app/page.tsx` and `src/components/Board.tsx`.

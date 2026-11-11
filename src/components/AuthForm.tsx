@@ -41,10 +41,20 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
-      // Only same-origin paths allowed — reject absolute and protocol-relative URLs.
+      // Only same-origin paths allowed — resolve against the current origin
+      // and verify it. A path like "/\evil.com" parses as a different origin.
       const next = params.get("next");
-      const safeNext =
-        next && /^\/(?!\/)/.test(next) ? next : "/board";
+      let safeNext = "/board";
+      if (next) {
+        try {
+          const u = new URL(next, window.location.origin);
+          if (u.origin === window.location.origin) {
+            safeNext = u.pathname + u.search;
+          }
+        } catch {
+          safeNext = "/board";
+        }
+      }
       router.push(safeNext);
       router.refresh();
     } catch {

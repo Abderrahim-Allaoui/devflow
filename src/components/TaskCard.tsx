@@ -28,14 +28,18 @@ export default function TaskCard({
       }}
       onDragEnd={onDragEnd}
       onClick={() => onOpen(task)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") onOpen(task);
-      }}
       data-task-id={task.id}
     >
-      <h3>{task.title}</h3>
+      <button
+        type="button"
+        className="task-title-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen(task);
+        }}
+      >
+        <h3>{task.title}</h3>
+      </button>
       <div className="task-meta">
         <span className={`badge badge-${task.priority}`}>{task.priority}</span>
         <button

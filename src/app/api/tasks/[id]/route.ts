@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { cleanString, jsonError } from "@/lib/api";
+import { guardMutation, cleanString, jsonError } from "@/lib/api";
 import { PRIORITIES } from "@/lib/validation";
 import { getOwnedColumn, getOwnedTask } from "@/lib/ownership";
 import {
@@ -9,10 +9,13 @@ import {
   clampPosition,
   normalizeColumnPlan,
 } from "@/lib/task-positions";
+import { withSerializableTx } from "@/lib/tx";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
@@ -35,11 +38,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const title = cleanString(patch.title, 160);
   if (patch.title !== undefined) {
+    if (typeof patch.title === "string" && patch.title.trim().length > 160) {
+      return jsonError(400, "Title must be at most 160 characters");
+    }
     if (!title) return jsonError(400, "Title cannot be empty");
     data.title = title;
   }
   if (patch.description !== undefined) {
-    data.description = cleanString(patch.description, 2000) ?? null;
+    if (
+      patch.description !== null &&
+      (typeof patch.description !== "string" || patch.description.length > 2000)
+    ) {
+      return jsonError(400, "description must be a string of at most 2000 characters");
+    }
+    data.description = patch.description === null
+      ? null
+      : cleanString(patch.description, 2000);
   }
   if (patch.priority !== undefined) {
     if (typeof patch.priority !== "string" || !PRIORITIES.includes(patch.priority)) {
@@ -73,10 +87,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     targetIndex = patch.position;
   }
 
+  // Same column, no explicit index → no move at all (never reorder to end).
+  if (targetColumnId === task.columnId && targetIndex === null) {
+    targetColumnId = null;
+  }
+
   if (targetColumnId || targetIndex !== null) {
     const finalColumnId = targetColumnId ?? task.columnId;
+    const sourceColumnId = task.columnId;
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await withSerializableTx(async (tx) => {
       // B2 — both writes inside one transaction: concurrent drag-and-drop
       // requests cannot interleave and corrupt ordering.
       const siblings = await tx.task.findMany({
@@ -113,6 +133,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
       await tx.task.update({ where: { id: task.id }, data: taskUpdate });
 
+      // Compact the SOURCE column too (the moved task left a gap there).
+      if (finalColumnId !== sourceColumnId) {
+        const sourceSiblings = await tx.task.findMany({
+          where: { columnId: sourceColumnId },
+          orderBy: { position: "asc" },
+          select: { id: true, position: true },
+        });
+        for (let i = 0; i < sourceSiblings.length; i++) {
+          if (sourceSiblings[i].position !== i) {
+            await tx.task.update({
+              where: { id: sourceSiblings[i].id },
+              data: { position: i },
+            });
+          }
+        }
+      }
+
       return tx.task.findUnique({ where: { id: task.id } });
     });
 
@@ -128,7 +165,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ task });
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
@@ -138,7 +177,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   const columnId = task.columnId;
 
-  await prisma.$transaction(async (tx) => {
+  await withSerializableTx(async (tx) => {
     await tx.task.delete({ where: { id: task.id } });
     // B1 — normalize remaining positions to 0..n-1 after deletion.
     const remaining = await tx.task.findMany({

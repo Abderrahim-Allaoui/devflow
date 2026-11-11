@@ -25,7 +25,7 @@ beforeAll(async () => {
   prisma = new PrismaClient();
   // Prime the shared limiter module with this DATABASE_URL.
   const mod = await import("@/lib/rate-limit");
-  globalThis.__limiter = mod;
+  (globalThis as Record<string, unknown>).__limiter = mod;
 }, 180_000);
 
 afterAll(async () => {

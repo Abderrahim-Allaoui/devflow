@@ -15,6 +15,8 @@ export type Column = {
   position: number;
   boardId: string;
   tasks: Task[];
+  /** Real total task count for this column (pre-cap). Present when the API computed it. */
+  taskCount?: number;
 };
 
 export type Board = {

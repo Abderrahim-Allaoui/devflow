@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { cleanString, jsonError } from "@/lib/api";
+import { guardMutation, cleanString, jsonError } from "@/lib/api";
 
 const DEFAULT_COLUMNS = ["Backlog", "In progress", "Done"];
 
@@ -19,27 +19,42 @@ export async function GET(req: NextRequest) {
   if (cursorParam) {
     try {
       const c = JSON.parse(Buffer.from(cursorParam, "base64url").toString("utf8"));
+      const date = new Date(c?.c);
+      if (typeof c?.i !== "string" || Number.isNaN(date.getTime())) {
+        return jsonError(400, "Invalid cursor");
+      }
       cursorWhere = {
         OR: [
-          { createdAt: { lt: new Date(c.c) } },
-          { createdAt: new Date(c.c), id: { lt: c.i } },
+          { createdAt: { lt: date } },
+          { createdAt: date, id: { lt: c.i } },
         ],
       };
     } catch {
       return jsonError(400, "Invalid cursor");
     }
   }
-  const boards = await prisma.board.findMany({
+  const boardsRaw = await prisma.board.findMany({
     where: { ownerId: user.id, ...(cursorWhere as Record<string, unknown>) },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: take + 1,
     include: {
       columns: {
         orderBy: { position: "asc" },
-        include: { tasks: { orderBy: { position: "asc" }, take: 50 } },
+        include: {
+          tasks: { orderBy: { position: "asc" }, take: 50 },
+          _count: { select: { tasks: true } },
+        },
       },
     },
   });
+
+  const boards = boardsRaw.map(({ columns, ...board }) => ({
+    ...board,
+    columns: columns.map(({ _count, ...column }) => ({
+      ...column,
+      taskCount: _count.tasks,
+    })),
+  }));
 
   const hasMore = boards.length > take;
   const page = boards.slice(0, take);
@@ -52,6 +67,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 

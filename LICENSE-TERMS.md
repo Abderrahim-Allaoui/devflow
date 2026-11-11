@@ -24,23 +24,31 @@ License (see `LICENSE`) — this document adds the terms that apply to the
 
 ## 2. Licenses
 
-### Personal License
+### Personal License — €39 (Gumroad ✓)
 - Use The Template for your own learning, portfolio and non-commercial projects.
-- Unlimited personal projects.
+- Unlimited personal projects, single developer.
 - You may **not** use The Template to build a product that you sell or charge
   money for.
 
-### Commercial License
+### Commercial License — €99 (Gumroad ✓)
 Everything in Personal, plus:
-- Use The Template to build products and services you sell to customers.
+- Use The Template on **client work** and to build products you sell.
 - Unlimited commercial and client projects.
 - One product may be sold to many customers (SaaS).
+- **This is the license you need for client work.**
 
-### Studio License
+### Studio License — €199 (Gumroad ✓)
 Everything in Commercial, plus:
 - Unlimited client projects, and you may resell the finished application to
   your clients as your own product.
 - The white-label rebranding guide and a 60-minute setup call are included.
+
+### Agency License — €349 (Gumroad ✓)
+Everything in Studio, plus:
+- Unlimited seats across your agency.
+- Resell the finished application to agency clients as your own product.
+- 12 months of priority support & updates (already included by other tiers;
+  this tier gets them first-response-fastest).
 
 ---
 
@@ -83,7 +91,7 @@ purchased separately.
 ## 6. Refunds
 
 7 days from the purchase date, provided you have not redistributed The Template
-to third parties. Refunds are processed by the payment provider (Stripe) and
+to third parties. Refunds are processed by the payment provider (Gumroad) and
 are typically received within 5 business days.
 
 ---

@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { cleanString, jsonError } from "@/lib/api";
+import { guardMutation, cleanString, jsonError } from "@/lib/api";
 import { getOwnedBoard } from "@/lib/ownership";
+import { withSerializableTx } from "@/lib/tx";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       : null;
   if (!title) return jsonError(400, "Column title is required");
 
-  const column = await prisma.$transaction(async (tx) => {
+  const column = await withSerializableTx(async (tx) => {
     const max = await tx.column.aggregate({
       where: { boardId: board.id },
       _max: { position: true },

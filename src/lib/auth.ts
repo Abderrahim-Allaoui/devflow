@@ -5,27 +5,42 @@ import { prisma } from "./prisma";
 
 export const SESSION_COOKIE = "devflow_token";
 
-/** Dev-only fallback. NEVER valid in production (see the guard below). */
+/** Dev/test-only fallback. NEVER valid outside development/test (see guard below). */
 const DEV_FALLBACK_SECRET = "dev-only-secret-change-me";
 const RAW_SECRET = process.env.JWT_SECRET;
 
-// S1 — fail fast in production when the secret is missing or too short.
-// Skipped while `next build` is collecting pages (no runtime secrets there);
-// the same check runs on the first runtime import, so a misconfigured
-// production deployment crashes loudly instead of signing forgeable JWTs.
+// S1 — fail fast in production when the secret is missing, too short, or a
+// known placeholder (e.g. the example shipped in .env.example). A JWT signed
+// with a public secret is forgeable by anyone.
 const IS_BUILD_PHASE = process.env.NEXT_PHASE === "phase-production-build";
+const KNOWN_WEAK = new Set([
+  "change-me-to-a-long-random-string",
+  "dev-only-secret-change-me",
+  "ci-only-secret-not-used-in-production",
+]);
+const IS_DEV = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
 if (
-  process.env.NODE_ENV === "production" &&
   !IS_BUILD_PHASE &&
-  (!RAW_SECRET || RAW_SECRET.length < 32)
+  (process.env.NODE_ENV === "production" || !IS_DEV) &&
+  (!RAW_SECRET || RAW_SECRET.length < 32 || KNOWN_WEAK.has(RAW_SECRET) || /change-?me/i.test(RAW_SECRET))
 ) {
   throw new Error(
-    "JWT_SECRET must be set to a random string of at least 32 characters in production. " +
+    "JWT_SECRET must be set to a random string of at least 32 characters outside development/test. " +
       "Generate one with: openssl rand -hex 32",
   );
 }
 
-export const JWT_SECRET = RAW_SECRET || DEV_FALLBACK_SECRET;
+export const JWT_SECRET =
+  RAW_SECRET ??
+  (IS_DEV ? DEV_FALLBACK_SECRET : "build-placeholder-do-not-use");
+
+/** Startup notice: IP-rate-limit needs TRUST_PROXY=true behind a proxy. */
+if (process.env.NODE_ENV === "production" && process.env.TRUST_PROXY !== "true") {
+  console.warn(
+    "[devflow] WARNING: TRUST_PROXY is not 'true'. Per-IP rate limits are disabled; " +
+      "leave this unset only if users do not share a proxy bucket, and see docs/SETUP.md.",
+  );
+}
 
 /**
  * Secure flag for the session cookie.

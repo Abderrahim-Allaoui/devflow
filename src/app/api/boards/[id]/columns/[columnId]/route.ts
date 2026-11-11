@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { cleanString, jsonError } from "@/lib/api";
+import { guardMutation, cleanString, jsonError } from "@/lib/api";
+import { withSerializableTx } from "@/lib/tx";
 
 type Params = { params: Promise<{ id: string; columnId: string }> };
 
 /** Rename a column (position is untouched). */
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
@@ -51,6 +54,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  * inside the same transaction.
  */
 export async function DELETE(req: NextRequest, { params }: Params) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Not authenticated");
 
@@ -60,7 +65,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   });
   if (!column) return jsonError(404, "Column not found");
 
-  await prisma.$transaction(async (tx) => {
+  await withSerializableTx(async (tx) => {
     await tx.column.delete({ where: { id: column.id } });
     // Re-compact sibling column positions.
     const siblings = await tx.column.findMany({

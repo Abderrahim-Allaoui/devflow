@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
-import { cleanString, jsonError } from "@/lib/api";
+import { guardMutation, cleanString, jsonError } from "@/lib/api";
 import { EMAIL_RE, MAX_PASSWORD, MIN_PASSWORD } from "@/lib/validation";
 import { clientIp, hitRateLimit, ipLimitEnabled } from "@/lib/rate-limit";
 
@@ -9,6 +9,8 @@ import { clientIp, hitRateLimit, ipLimitEnabled } from "@/lib/rate-limit";
 const MAX_PER_IP = 10;
 
 export async function POST(req: NextRequest) {
+  const blocked = guardMutation(req);
+  if (blocked) return blocked;
   let body: unknown;
   try {
     body = await req.json();
@@ -37,8 +39,9 @@ export async function POST(req: NextRequest) {
     return jsonError(429, "Too many attempts — try again in a few minutes");
   }
 
-  // Same response whether the email is taken or not (no user enumeration).
-  // The unique constraint on email also covers concurrent sign-ups (P2002).
+  // Same generic message whether the email is taken or the input is invalid
+  // (no user enumeration). The unique constraint on email also covers
+  // concurrent sign-ups (P2002).
   const GENERIC = "Could not create account with these details";
   let user;
   try {

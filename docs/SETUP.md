@@ -47,6 +47,7 @@ Keep the **Postgres** schema (`prisma/schema.postgres.prisma`) — the default
 `prisma/schema.prisma` is SQLite-only. Apply the migration:
 
 ```bash
+npx prisma generate --schema prisma/schema.postgres.prisma
 DATABASE_URL="postgresql://user:password@host:5432/devflow" \
   npx prisma migrate deploy --schema prisma/schema.postgres.prisma
 npm run dev
