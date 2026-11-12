@@ -32,8 +32,9 @@ services:
       # Local Docker serves over plain http, so Secure cookies must be off here.
       # TLS-terminated production deployments should leave this unset (Secure by default).
       COOKIE_SECURE: "false"
-      # Enables per-IP rate limits behind the compose proxy.
-      TRUST_PROXY: "true"
+      # No TRUST_PROXY here: this port is exposed directly with no reverse proxy,
+      # so X-Forwarded-For is client-controlled and must NOT be trusted.
+      # Behind a real proxy that overwrites X-Forwarded-For, set it in .env instead.
       PORT: 3000
     ports:
       - "3000:3000"

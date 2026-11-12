@@ -18,50 +18,73 @@ jobs:
       - name: Probe
         id: probe
         run: |
-          urls="https://devflow-black-eight.vercel.app https://devflow-black-eight.vercel.app/api/health"
           failed=""
-          for url in $urls; do
+          for url in "https://devflow-black-eight.vercel.app" "https://devflow-black-eight.vercel.app/api/health"; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "$url" || echo "000")
             echo "$url -> $code"
             [ "$code" = "200" ] || failed="$failed $url($code)"
           done
-          echo "FAILED=$failed" >> "$GITHUB_OUTPUT"
-          [ -z "$failed" ] && echo "All endpoints healthy" || echo "Down:$failed"
+          if [ -n "$failed" ]; then
+            echo "FAILED=$failed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "FAILED=" >> "$GITHUB_OUTPUT"
 
-      - name: Open/close an issue when something is down
+      - name: Alert on failure
         if: steps.probe.outputs.FAILED != ''
         uses: actions/github-script@v7
         env:
           FAILED: ${{ steps.probe.outputs.FAILED }}
         with:
           script: |
-            const failed = process.env.FAILED || '';
-            const title = `Uptime: endpoint down: ${failed}`;
+            const failed = process.env.FAILED || 'unknown';
+            const title = `Uptime: endpoint down: ${failed.trim()}`;
             const body = [
               'Automated uptime check failed.',
               '',
               '```',
-              failed,
+              failed.trim(),
               '```',
               '',
               `_Checked at ${new Date().toISOString()} by the uptime workflow._`
             ].join('\n');
             const existing = await github.rest.issues.listForRepo({
-              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'uptime'
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'uptime'
             });
             if (existing.data.length === 0) {
               await github.rest.issues.create({
-                owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ['uptime']
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ['uptime']
               });
             } else {
               await github.rest.issues.createComment({
-                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.data[0].number, body
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.data[0].number, body
               });
             }
-            await github.rest.issues.createComment({
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.data[0].number,
-              body: 'Endpoints answer 200 again — closing.'
+
+      - name: Close issue when recovered
+        if: steps.probe.outputs.FAILED == ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'uptime'
             });
-            await github.rest.issues.close({
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.data[0].number
-            });
+            for (const issue of existing.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: 'Endpoint is back to 200 — closing.'
+              });
+              await github.rest.issues.close({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number
+              });
+            }

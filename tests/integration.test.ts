@@ -170,7 +170,7 @@ describe("task positions B1/B2/B3 (real DB)", () => {
     });
 
     await prisma.$transaction(async (tx) => {
-      // Two concurrent drag-and-drop intentions serialized in one tx.
+      // Two consecutive moves serialized in one transaction (sequential, not concurrent).
       const s0 = await tx.task.findMany({
         where: { columnId, id: { not: tasks[0].id } },
         orderBy: { position: "asc" },

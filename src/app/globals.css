@@ -1,4 +1,4 @@
-/* ── DevFlow design system ────────────────────────────────── */
+﻿/* ── DevFlow design system ────────────────────────────────── */
 :root {
   --bg: #0b0e14;
   --surface: #11151f;
@@ -211,6 +211,7 @@ a {
 /* ── Auth pages ───────────────────────────────────────────── */
 .auth-wrap {
   min-height: calc(100vh - 61px);
+  min-height: calc(100dvh - 61px);
   display: grid;
   place-items: center;
   padding: 2rem 1rem;
@@ -275,6 +276,7 @@ a {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 61px);
+  min-height: calc(100dvh - 61px);
 }
 
 .board-top {

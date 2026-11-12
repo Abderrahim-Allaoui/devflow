@@ -21,7 +21,7 @@ database are included (see `tests/integration.test.ts`).*
 > template is available → [devflow-license.vercel.app](https://devflow-license.vercel.app)
 > (Personal · Commercial · Studio — one-time payment, docs included).
 > **Buy the template** (one-time payment, code + docs + 12 months of updates):
-> Personal EUR 39 - https://allaoui67.gumroad.com/l/fyimeh | Commercial EUR 99 - https://allaoui67.gumroad.com/l/jempqs | Studio EUR 199 - https://allaoui67.gumroad.com/l/edecsm
+> Personal EUR 39 - https://allaoui67.gumroad.com/l/fyimeh | Commercial EUR 99 - https://allaoui67.gumroad.com/l/jempqs | Studio EUR 199 - https://allaoui67.gumroad.com/l/edecsm | Agency EUR 349 - https://allaoui67.gumroad.com/l/inimos
 > Discussion &amp; roadmap: [github.com/Abderrahim-Allaoui/devflow/discussions](https://github.com/Abderrahim-Allaoui/devflow/discussions)
 > Prefer to try it first? Grab the packaged template:
 > [v1.0.0 release](https://github.com/Abderrahim-Allaoui/devflow/releases/download/v1.0.0/DevFlow-v1.0.0-template.zip).
@@ -162,7 +162,7 @@ tests/                    # vitest suites
 ### Design decisions
 
 - **Ownership checks in one layer** (`lib/ownership.ts`) — every board/column/task query goes through `getOwned*`, so a user can never touch another user's data.
-- **No user enumeration** — login returns the same error for unknown email and wrong password.
+- **Same-message login errors** — login returns the same error for unknown email and wrong password (brute force is rate-limited per email + ip+email, 20 attempts per 15 min).
 - **Optimistic drag & drop** — the UI moves instantly, then reconciles with the server response.
 - **Multi-stage Docker build** — dev dependencies never reach the runtime image.
 

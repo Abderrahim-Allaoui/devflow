@@ -2,7 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie, verifyPassword } from "@/lib/auth";
 import { guardMutation, jsonError } from "@/lib/api";
-import { clearRateLimit, clientIp, hitRateLimit, ipLimitEnabled } from "@/lib/rate-limit";
+import { clearRateLimit, clientIp, hitRateLimit } from "@/lib/rate-limit";
 import { MAX_PASSWORD } from "@/lib/validation";
 
 // Dummy hash so unknown emails cost the same bcrypt time as real ones.
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   if (!cleanEmail || cleanEmail.length > 254 || !pass) {
     return jsonError(400, "Email and password are required");
   }
-  if (pass.length > MAX_PASSWORD) {
-    return jsonError(400, `Password must be at most ${MAX_PASSWORD} characters`);
+  if (Buffer.byteLength(pass) > MAX_PASSWORD) {
+    return jsonError(400, `Password must be at most ${MAX_PASSWORD} bytes`);
   }
 
   // S3 — brute-force protection (per IP, and per IP+email).
@@ -43,15 +43,16 @@ export async function POST(req: NextRequest) {
   const emailKey = `login:email:${cleanEmail}`;
   const ipKey = `login:ip:${ip}`;
   const ipEmailKey = `login:ip+email:${ip}:${cleanEmail}`;
-  const MAX_PER_EMAIL = 5;
+  const MAX_PER_EMAIL = 20; // generous for legit retries, caps credential stuffing
   const MAX_PER_IP = 20;
-  const MAX_PER_IP_EMAIL = 3;
+  const MAX_PER_IP_EMAIL = 5;
 
-  // Per-email counter is maintained for observability only, never to reject.
-  await hitRateLimit(emailKey, MAX_PER_EMAIL);
-  const ipOk = (!ipLimitEnabled() || (await hitRateLimit(ipKey, MAX_PER_IP)));
-  const ipEmailOk = (!ipLimitEnabled() || (await hitRateLimit(ipEmailKey, MAX_PER_IP_EMAIL)));
-  if (!ipOk || !ipEmailOk) {
+  // Enforced regardless of TRUST_PROXY — with no trusted proxy the client IP
+  // falls back to a shared "local" bucket, which still caps brute force.
+  const emailOk = await hitRateLimit(emailKey, MAX_PER_EMAIL);
+  const ipOk = await hitRateLimit(ipKey, MAX_PER_IP);
+  const ipEmailOk = await hitRateLimit(ipEmailKey, MAX_PER_IP_EMAIL);
+  if (!emailOk || !ipOk || !ipEmailOk) {
     return jsonError(429, "Too many attempts — try again in a few minutes");
   }
 

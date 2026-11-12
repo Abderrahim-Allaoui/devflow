@@ -50,9 +50,10 @@ export async function GET(req: NextRequest) {
 
   const boards = boardsRaw.map(({ columns, ...board }) => ({
     ...board,
-    columns: columns.map(({ _count, ...column }) => ({
+    columns: (columns ?? []).map(({ _count, tasks, ...column }) => ({
       ...column,
-      taskCount: _count.tasks,
+      tasks,
+      taskCount: _count?.tasks ?? tasks?.length ?? 0,
     })),
   }));
 

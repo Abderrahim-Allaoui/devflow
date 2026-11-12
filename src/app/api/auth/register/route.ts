@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
 import { guardMutation, cleanString, jsonError } from "@/lib/api";
 import { EMAIL_RE, MAX_PASSWORD, MIN_PASSWORD } from "@/lib/validation";
-import { clientIp, hitRateLimit, ipLimitEnabled } from "@/lib/rate-limit";
+import { clientIp, hitRateLimit } from "@/lib/rate-limit";
 
 // S3 — sign-up spam protection: 10 accounts per IP per 15 min.
 const MAX_PER_IP = 10;
@@ -29,13 +29,13 @@ export async function POST(req: NextRequest) {
   if (!cleanName || !cleanEmail || !EMAIL_RE.test(cleanEmail)) {
     return jsonError(400, "Name and a valid email are required");
   }
-  if (pass.length < MIN_PASSWORD || pass.length > MAX_PASSWORD) {
-    return jsonError(400, `Password must be ${MIN_PASSWORD}-${MAX_PASSWORD} characters`);
+  if (pass.length < MIN_PASSWORD || Buffer.byteLength(pass) > MAX_PASSWORD) {
+    return jsonError(400, `Password must be ${MIN_PASSWORD}+ characters and at most ${MAX_PASSWORD} bytes`);
   }
 
-  // S3 — account-creation spam protection (per IP).
+  // S3 — account-creation spam protection (per IP; always enforced).
   const ipKey = `register:ip:${clientIp(req.headers)}`;
-  if (ipLimitEnabled() && !(await hitRateLimit(ipKey, MAX_PER_IP))) {
+  if (!(await hitRateLimit(ipKey, MAX_PER_IP))) {
     return jsonError(429, "Too many attempts — try again in a few minutes");
   }
 

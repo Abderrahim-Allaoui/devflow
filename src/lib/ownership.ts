@@ -25,9 +25,10 @@ export async function getOwnedBoard(
   if (!board) return null;
   return {
     ...board,
-    columns: board.columns.map(({ _count, ...column }) => ({
+    columns: (board.columns ?? []).map(({ _count, tasks, ...column }) => ({
       ...column,
-      taskCount: _count.tasks,
+      tasks,
+      taskCount: _count?.tasks ?? tasks?.length ?? 0,
     })),
   };
 }

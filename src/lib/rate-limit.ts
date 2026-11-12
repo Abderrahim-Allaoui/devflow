@@ -101,11 +101,13 @@ export async function clearRateLimit(...keys: string[]): Promise<void> {
 }
 
 /**
- * IP-based limits are only meaningful behind a proxy that overwrites the
- * client IP header. Without TRUST_PROXY=true every request would share one
- * "local" bucket, so one attacker could lock out all users. Callers skip the
- * IP buckets when this returns false.
+ * IP-based limits are enforced ALWAYS, but the bucketing differs:
+ * behind a trusted proxy (TRUST_PROXY=true) we bucket by the last hop's IP;
+ * otherwise every request lands in a shared "local" bucket. The shared
+ * bucket still caps brute force (20 attempts/15min per email, 5 per
+ * ip+email) at the cost of collateral blocking on shared connections —
+ * acceptable; securable by setting TRUST_PROXY=true behind a real proxy.
  */
 export function ipLimitEnabled(): boolean {
-  return process.env.TRUST_PROXY === "true";
+  return true;
 }

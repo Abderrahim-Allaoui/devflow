@@ -16,7 +16,7 @@ const FEATURES = [
   },
   {
     title: "Production-ready",
-    body: "Docker image (multi-stage, non-root) with `prisma migrate deploy` on startup — deploys in one command.",
+    body: "Multi-stage Docker image, non-root, migrations applied on startup via `prisma migrate deploy` — one command after `.env` setup.",
   },
   {
     title: "Tested & typed",
